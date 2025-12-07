@@ -1,38 +1,8 @@
 import asyncio
-from sqlalchemy import select, func
-
-from database import AsyncSessionLocal
-from models_person import Person
 from load_data import load_people_from_json, init_db
-
-# ------------ устаревший синтаксис ---------------
-
-# async def is_table_empty() -> bool:
-#     async with AsyncSessionLocal() as session:
-#         result = await session.execute(select(func.count()).select_from(Person))
-#         count = result.scalar()
-#         return count == 0
-
-
-# async def get_people():
-#     async with AsyncSessionLocal() as session:
-#         result = await session.execute(select(Person))
-#         return result.scalars().all()
-
-# ------------ новый синтаксис ---------------
-
-async def is_table_empty() -> bool:
-    async with AsyncSessionLocal() as session:
-        count = await session.scalar(
-            select(func.count()).select_from(Person)
-        )
-        return count == 0
-
-
-async def get_people():
-    async with AsyncSessionLocal() as session:
-        return await session.scalars(select(Person))
-
+from crud_person import (
+    is_table_empty, get_people, create_person, update_person_email, delete_person
+)
 
 async def main():
     await init_db()
@@ -43,12 +13,28 @@ async def main():
     else:
         print("Таблица уже содержит данные.")
 
+    print("\nСодержимое таблицы после загрузки:")
     people = await get_people()
-
-    print("\nСодержимое таблицы people:")
     for p in people:
         print(f"{p.id}: {p.name}, {p.age}, {p.email}")
 
+    # ---- Create ----
+    print("\nДобавляем нового человека Dave ...")
+    await create_person("Dave", 28, "dave@example.com")
+
+    # ---- Update ----
+    print("\nОбновляем email Alice ...")
+    await update_person_email(1, "alice_new@example.com")
+
+    # ---- Delete ----
+    print("\nУдаляем Bob ...")
+    await delete_person(2)
+
+    # ---- Read после изменений ----
+    print("\nСодержимое таблицы после изменений:")
+    people = await get_people()
+    for p in people:
+        print(f"{p.id}: {p.name}, {p.age}, {p.email}")
 
 if __name__ == "__main__":
     asyncio.run(main())
