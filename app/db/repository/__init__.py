@@ -1,1 +1,3 @@
-from .person import PersonRepository
+from .person import PersonRepository  # было
+from .books import BookRepository     # добавляем
+
