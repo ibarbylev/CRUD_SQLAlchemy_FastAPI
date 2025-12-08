@@ -10,11 +10,6 @@ class BookRepository:
             count = await session.scalar(select(func.count()).select_from(Book))
             return count == 0
 
-    # @staticmethod
-    # async def list_books() -> list[Book]:
-    #     async with AsyncSessionLocal() as session:
-    #         result = await session.scalars(select(Book))
-    #         return result.unique().all()
     @staticmethod
     async def list_books() -> list[dict]:
         async with AsyncSessionLocal() as session:
