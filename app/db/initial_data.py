@@ -1,12 +1,8 @@
 import json
 from app.db import engine, Base
 from app.db.repository.person import PersonRepository
-from app.db.repository.books import BookRepository
-from app.db.models.person import Person
-from app.db.models.books import Author, Genre, Book, BookDetail, BookGenre
-from sqlalchemy import insert
+from app.db.models.books import Author, Genre, Book, BookDetail
 from app.db import AsyncSessionLocal
-from sqlalchemy.schema import DropTable
 
 # ---------------------------------------------------------
 # INIT DB: DROP ALL → CREATE ALL

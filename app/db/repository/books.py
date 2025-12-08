@@ -1,7 +1,6 @@
 from sqlalchemy import select, func, text
 from app.db import AsyncSessionLocal
-from app.db.models.books import Book, Author, Genre, BookDetail, BookRead
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.models.books import Book, Genre, BookDetail
 
 class BookRepository:
 
@@ -33,26 +32,6 @@ class BookRepository:
                 for b in books
             ]
 
-    # @staticmethod
-    # async def create_book(data) -> Book:
-    #     async with AsyncSessionLocal() as session:
-    #         async with session.begin():
-    #             book = Book(
-    #                 title=data.title,
-    #                 author_id=data.author_id,
-    #                 year_published=data.year_published,
-    #                 is_deleted=False  # можно по умолчанию False
-    #             )
-    #             session.add(book)
-    #             await session.flush()  # чтобы book.id стал доступен
-    #
-    #             # add genres
-    #             if data.genre_ids:
-    #                 for gid in data.genre_ids:
-    #                     genre = await session.get(Genre, gid)
-    #                     if genre:
-    #                         book.genres.append(genre)
-    #         return book
     @staticmethod
     async def create_book(data) -> Book:
         async with AsyncSessionLocal() as session:
