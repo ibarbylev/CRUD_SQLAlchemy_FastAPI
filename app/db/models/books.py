@@ -129,6 +129,15 @@ class BookRead(BaseModel):
 
     model_config = {"from_attributes": True}
 
+def book_to_read(book: Book) -> BookRead:
+    return BookRead(
+        id=book.id,
+        title=book.title,
+        author_id=book.author_id,
+        year_published=book.year_published,
+        is_deleted=book.is_deleted,
+        genre_ids=[g.id for g in book.genres]  # преобразуем объекты Genre в список id
+    )
 
 class AuthorRead(BaseModel):
     id: int
