@@ -1,6 +1,6 @@
 from sqlalchemy import select, func
 from app.db import AsyncSessionLocal
-from app.db.models.books import Book, Author, Genre, BookDetail, book_genre_table
+from app.db.models.books import Book, Author, Genre, BookDetail
 
 class BookRepository:
 

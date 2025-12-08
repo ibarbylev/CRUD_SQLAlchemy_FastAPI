@@ -3,18 +3,28 @@ from app.db import engine, Base
 from app.db.repository.person import PersonRepository
 from app.db.repository.books import BookRepository
 from app.db.models.person import Person
-from app.db.models.books import Author, Genre, Book, BookDetail
+from app.db.models.books import Author, Genre, Book, BookDetail, BookGenre
 from sqlalchemy import insert
 from app.db import AsyncSessionLocal
-
+from sqlalchemy.schema import DropTable
 
 # ---------------------------------------------------------
 # INIT DB: DROP ALL → CREATE ALL
 # ---------------------------------------------------------
+
+from sqlalchemy import text
+
 async def init_db():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        # удаляем таблицы с зависимостями через raw SQL
+        await conn.execute(text("DROP TABLE IF EXISTS book_genres CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS book_details CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS books CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS authors CASCADE"))
+        await conn.execute(text("DROP TABLE IF EXISTS genres CASCADE"))
+        # создаём все таблицы ORM
         await conn.run_sync(Base.metadata.create_all)
+
 
 
 # ---------------------------------------------------------
@@ -44,7 +54,7 @@ async def load_books_from_json(json_file: str):
     books = data["books"]
     details = data["book_details"]
 
-    async with AsyncSessionLocal() as session:
+    async with AsyncSessionLocal() as session:  # type: AsyncSession
         async with session.begin():
 
             # -------- AUTHORS --------
@@ -61,7 +71,7 @@ async def load_books_from_json(json_file: str):
                     name=g["name"]
                 ))
 
-            await session.flush()
+            await session.flush()  # применяем вставки, чтобы id были доступны
 
             # -------- BOOKS --------
             for b in books:
@@ -69,28 +79,30 @@ async def load_books_from_json(json_file: str):
                     id=b["id"],
                     title=b["title"],
                     author_id=b["author_id"],
-                    year_published=b["year_published"],
-                    is_deleted=b["is_deleted"],
+                    year_published=b.get("year_published"),
+                    is_deleted=b.get("is_deleted", False)
                 )
                 session.add(book)
                 await session.flush()
 
-                # assign many-to-many genres
-                for gid in b["genre_ids"]:
-                    genre = await session.get(Genre, gid)
-                    if genre:
-                        book.genres.append(genre)
+                # many-to-many genres
+                book.genres = [
+                    await session.get(Genre, gid) for gid in b.get("genre_ids", [])
+                    if await session.get(Genre, gid) is not None
+                ]
+
+                session.add(book)
 
             await session.flush()
 
             # -------- BOOK DETAILS --------
             for d in details:
-                session.add(BookDetail(
-                    book_id=d["book_id"],
-                    summary=d["summary"],
-                    page_count=d["page_count"]
-                ))
-
+                book = await session.get(Book, d["book_id"])
+                if book:
+                    book.detail = BookDetail(
+                        summary=d.get("summary"),
+                        page_count=d.get("page_count")
+                    )
 
 # ---------------------------------------------------------
 # Full initialization call (optional helper)

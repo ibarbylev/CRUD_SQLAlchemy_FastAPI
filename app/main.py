@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
         await load_people_from_json("people.json")
 
     # --- Загрузка книг ---
-    if await BookRepository.is_table_empty():
+    if await BookRepository.is_tables_empty():
         await load_books_from_json("books.json")
 
     yield
