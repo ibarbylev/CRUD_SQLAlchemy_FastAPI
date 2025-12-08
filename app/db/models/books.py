@@ -41,15 +41,15 @@ class Genre(Base):
 class BookGenre(Base):
     __tablename__ = "book_genres"
 
-    book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), primary_key=True)
-    genre_id: Mapped[int] = mapped_column(ForeignKey("genres.id"), primary_key=True)
+    book_id: Mapped[int] = mapped_column(ForeignKey("books.id", ondelete="CASCADE"), primary_key=True)
+    genre_id: Mapped[int] = mapped_column(ForeignKey("genres.id", ondelete="CASCADE"), primary_key=True)
 
 
 # ---------- Книга ----------
 class Book(Base):
     __tablename__ = "books"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     year_published: Mapped[int | None] = mapped_column(Integer)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -65,7 +65,8 @@ class Book(Base):
     genres: Mapped[list["Genre"]] = relationship(
         back_populates="books",
         secondary="book_genres",
-        lazy="noload"
+        lazy="noload",
+        cascade="all, delete"
     )
 
     # one-to-one
@@ -136,8 +137,8 @@ def book_to_read(book: Book) -> BookRead:
         author_id=book.author_id,
         year_published=book.year_published,
         is_deleted=book.is_deleted,
-        genre_ids=[g.id for g in book.genres]  # преобразуем объекты Genre в список id
-    )
+        genre_ids=[g.id for g in book.genres] if book.genres else [],
+        detail=BookDetailRead.model_validate(book.detail) if book.detail else None    )
 
 class AuthorRead(BaseModel):
     id: int

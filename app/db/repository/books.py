@@ -1,6 +1,7 @@
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from app.db import AsyncSessionLocal
-from app.db.models.books import Book, Author, Genre, BookDetail
+from app.db.models.books import Book, Author, Genre, BookDetail, BookRead
+from sqlalchemy.ext.asyncio import AsyncSession
 
 class BookRepository:
 
@@ -32,25 +33,57 @@ class BookRepository:
                 for b in books
             ]
 
+    # @staticmethod
+    # async def create_book(data) -> Book:
+    #     async with AsyncSessionLocal() as session:
+    #         async with session.begin():
+    #             book = Book(
+    #                 title=data.title,
+    #                 author_id=data.author_id,
+    #                 year_published=data.year_published,
+    #                 is_deleted=False  # можно по умолчанию False
+    #             )
+    #             session.add(book)
+    #             await session.flush()  # чтобы book.id стал доступен
+    #
+    #             # add genres
+    #             if data.genre_ids:
+    #                 for gid in data.genre_ids:
+    #                     genre = await session.get(Genre, gid)
+    #                     if genre:
+    #                         book.genres.append(genre)
+    #         return book
     @staticmethod
     async def create_book(data) -> Book:
         async with AsyncSessionLocal() as session:
             async with session.begin():
+                # синхронизируем sequence автоматически
+                await session.execute(
+                    text("SELECT setval('books_id_seq', (SELECT MAX(id) FROM books))")
+                )
+
                 book = Book(
                     title=data.title,
                     author_id=data.author_id,
                     year_published=data.year_published,
+                    is_deleted=False
                 )
                 session.add(book)
                 await session.flush()
 
-                # add genres
+                # genres
                 if data.genre_ids:
-                    for gid in data.genre_ids:
-                        genre = await session.get(Genre, gid)
-                        if genre:
-                            book.genres.append(genre)
+                    result = await session.execute(
+                        select(Genre).where(Genre.id.in_(data.genre_ids))
+                    )
+                    book.genres = result.scalars().all()
 
+                # details
+                if data.detail:
+                    book.detail = BookDetail(
+                        summary=data.detail.summary,
+                        page_count=data.detail.page_count
+                    )
             return book
 
     @staticmethod
@@ -60,5 +93,5 @@ class BookRepository:
                 book = await session.get(Book, book_id)
                 if not book:
                     return False
-                book.is_deleted = True
+                await session.delete(book)
             return True
