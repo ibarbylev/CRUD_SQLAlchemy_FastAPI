@@ -9,13 +9,6 @@ router = APIRouter(prefix="/books", tags=["books"])
 async def read_books():
     return await BookRepository.list_books()
 
-
-# @router.get("/books/", response_model=List[BookRead])
-# async def read_books(session: AsyncSession):
-#     result = await session.execute(select(Book))
-#     books = result.scalars().all()
-#     return [book_to_read(b) for b in books]  # конвертация в Pydantic
-
 @router.post("/books/", response_model=BookRead)
 async def add_book(data: BookCreate):
     book = await BookRepository.create_book(data)

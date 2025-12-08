@@ -1,4 +1,5 @@
 from .person import Person, PersonCreate, PersonRead  # эти модели уже есть
+
 from .books import (                                  # добавляем новые модели
     Author, Genre, Book, BookDetail, BookGenre, book_to_read
 
